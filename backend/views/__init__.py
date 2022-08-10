@@ -1,5 +1,6 @@
 from .video import *
 from .video_export import *
+from .timeline_view import *
 from .timeline import *
 from .timeline_import import *
 from .plugin import *

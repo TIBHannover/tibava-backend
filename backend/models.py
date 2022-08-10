@@ -158,6 +158,7 @@ class Timeline(models.Model):
 
         if include_refs_hashes:
             result["timeline_segment_ids"] = [x.id.hex for x in self.timelinesegment_set.all()]
+            result["timeline_view_ids"] = [x.id.hex for x in self.timelineview_set.all()]
             if self.plugin_run_result:
                 result["plugin_run_result_id"] = self.plugin_run_result.id.hex
 
@@ -177,6 +178,30 @@ class Timeline(models.Model):
             segment.clone(new_timeline_db, includeannotations)
 
         return new_timeline_db
+
+
+class TimelineView(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    name = models.CharField(max_length=256)
+    timelines = models.ManyToManyField(Timeline)
+
+    def to_dict(self, include_refs_hashes=True, include_refs=False, **kwargs):
+        result = {
+            "id": self.id.hex,
+            "video_id": self.video.id.hex,
+            "name": self.name,
+        }
+
+        if include_refs_hashes:
+            result["timeline_ids"] = [x.id.hex for x in self.timelines.all()]
+
+        elif include_refs:
+            result["timelines"] = [
+                x.to_dict(include_refs_hashes=include_refs_hashes, include_refs=include_refs, **kwargs)
+                for x in self.timelines.all()
+            ]
+        return result
 
 
 class AnnotationCategory(models.Model):

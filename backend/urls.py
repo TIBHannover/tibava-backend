@@ -23,6 +23,12 @@ urlpatterns = [
     path("plugin/run/list", views.PluginRunList.as_view(), name="plugin_run_list"),
     path("plugin/run/result/list", views.PluginRunResultList.as_view(), name="plugin_run_list"),
     #
+    path("timeline/view/list", views.TimelineViewList.as_view(), name="timeline_view_list"),
+    path("timeline/view/duplicate", views.TimelineViewDuplicate.as_view(), name="timeline_view_duplicate"),
+    path("timeline/view/rename", views.TimelineViewRename.as_view(), name="timeline_view_rename"),
+    path("timeline/view/delete", views.TimelineViewDelete.as_view(), name="timeline_view_delete"),
+    path("timeline/view/create", views.TimelineViewCreate.as_view(), name="timeline_view_create"),
+    #
     path("timeline/list", views.TimelineList.as_view(), name="timeline_list"),
     path("timeline/duplicate", views.TimelineDuplicate.as_view(), name="timeline_duplicate"),
     path("timeline/rename", views.TimelineRename.as_view(), name="timeline_rename"),
