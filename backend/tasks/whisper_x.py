@@ -30,7 +30,14 @@ from django.conf import settings
 class WhisperXParser(Parser):
     def __init__(self):
 
-        self.valid_parameter = {}
+        self.valid_parameter = {
+            "language_code": {"parser": str, "default": None},
+        }
+    
+    def __call__(self, parameters: Dict = None, **kwargs) -> Dict:
+        parameters = super().__call__(parameters, **kwargs)
+        if parameters["language_code"] == "none": parameters["language_code"] = None
+        return parameters
 
 
 @PluginManager.export_plugin("whisper_x")
@@ -78,6 +85,9 @@ class WhisperX(Task):
         result = self.run_analyser(
             client,
             "whisper_x",
+            parameters={
+                "language_code": parameters.get("language_code")
+                },
             inputs={**result[0]},
             downloads=["annotations"],
         )
@@ -106,16 +116,16 @@ class WhisperX(Task):
                     name="Transcript", video=video, owner=user
                 )
                 result_timelines = {}
-                for data in data.data:
-                    with data as data:
+                for sub_index, sub_data in data:
+                    with sub_data as sub_data:
                         timeline = Timeline.objects.create(
                             video=video,
-                            name=data.name,
+                            name=sub_data.name,
                             type=Timeline.TYPE_TRANSCRIPT,
-                            parent=parent_timeline
+                            parent=parent_timeline,
                         )
-                        result_timelines[data.name] = timeline.id.hex
-                        for annotation in data.annotations:
+                        result_timelines[sub_data.name] = timeline.id.hex
+                        for annotation in sub_data.annotations:
                             timeline_segment_db = TimelineSegment.objects.create(
                                 timeline=timeline,
                                 start=annotation.start,
@@ -125,7 +135,9 @@ class WhisperX(Task):
                                 label = str(label)
                                 if len(label) > settings.ANNOTATION_MAX_LENGTH:
                                     label = (
-                                        label[: max(0, settings.ANNOTATION_MAX_LENGTH - 4)]
+                                        label[
+                                            : max(0, settings.ANNOTATION_MAX_LENGTH - 4)
+                                        ]
                                         + " ..."
                                     )
                                 annotation_db, _ = Annotation.objects.get_or_create(
