@@ -29,14 +29,14 @@ from django.conf import settings
 @PluginManager.export_parser("whisper_x")
 class WhisperXParser(Parser):
     def __init__(self):
-
         self.valid_parameter = {
             "language_code": {"parser": str, "default": None},
         }
-    
+
     def __call__(self, parameters: Dict = None, **kwargs) -> Dict:
         parameters = super().__call__(parameters, **kwargs)
-        if parameters["language_code"] == "none": parameters["language_code"] = None
+        if parameters["language_code"] == "none":
+            parameters["language_code"] = None
         return parameters
 
 
@@ -58,7 +58,6 @@ class WhisperX(Task):
         dry_run: bool = False,
         **kwargs
     ):
-
         manager = DataManager(self.config["output_path"])
         client = TaskAnalyserClient(
             host=self.config["analyser_host"],
@@ -85,9 +84,7 @@ class WhisperX(Task):
         result = self.run_analyser(
             client,
             "whisper_x",
-            parameters={
-                "language_code": parameters.get("language_code")
-                },
+            parameters={"language_code": parameters.get("language_code")},
             inputs={**result[0]},
             downloads=["annotations"],
         )
@@ -157,5 +154,5 @@ class WhisperX(Task):
                     "plugin_run": plugin_run.id.hex,
                     "plugin_run_results": [],
                     "timelines": result_timelines,
-                    "data": {"annotations": result[1]["annotations"].id}
+                    "data": {"annotations": result[1]["annotations"].id},
                 }
