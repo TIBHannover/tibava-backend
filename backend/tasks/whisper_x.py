@@ -101,13 +101,12 @@ class WhisperX(Task):
                 Create a timeline labeled
                 """
                 data.extract_all(manager)
-                parent_timeline = None
-                if len(data.data) > 1:
-                    parent_timeline = Timeline.objects.create(
-                        video=video,
-                        name="WhisperX Transcript",
-                        type=Timeline.TYPE_ANNOTATION,
-                    )
+
+                parent_timeline = Timeline.objects.create(
+                    video=video,
+                    name="WhisperX Transcript",
+                    type=Timeline.TYPE_ANNOTATION,
+                )
 
                 category_db, _ = AnnotationCategory.objects.get_or_create(
                     name="Transcript", video=video, owner=user
@@ -142,7 +141,7 @@ class WhisperX(Task):
                                     video=video,
                                     category=category_db,
                                     owner=user,
-                                    # color=color,
+                                    color="#EEEEEE",  # white/gray
                                 )
 
                                 TimelineSegmentAnnotation.objects.create(
