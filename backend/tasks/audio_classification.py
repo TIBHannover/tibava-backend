@@ -24,7 +24,7 @@ from django.conf import settings
 
 
 @PluginManager.export_parser("audio_classification")
-class AudioClassification(Parser):
+class AudioClassificationParser(Parser):
     def __init__(self):
         self.valid_parameter = {
             "segment_type": {"parser": str},  # Speaker or Shot
@@ -174,38 +174,6 @@ class AudioClassification(Task):
                 result_timelines.update(
                     create_timelines(data, timeline_name, "label_pred", {})
                 )
-                """
-                timeline = Timeline.objects.create(
-                            video=video,
-                            name=timeline_name,
-                            type=Timeline.TYPE_ANNOTATION,
-                        )
-                result_timelines[timeline_name] = timeline.id.hex
-
-                for annotation in data.annotations:
-                    timeline_segment_db = TimelineSegment.objects.create(
-                        timeline=timeline,
-                        start=annotation.start,
-                        end=annotation.end,
-                    )
-                    for label_object in annotation.labels:
-                        label = str(label_object["label_pred"])
-                        if len(label) > settings.ANNOTATION_MAX_LENGTH:
-                            label = (
-                                label[: max(0, settings.ANNOTATION_MAX_LENGTH - 4)]
-                                + " ..."
-                            )
-                        annotation_db, _ = Annotation.objects.get_or_create(
-                            name=label,
-                            video=video,
-                            owner=user,
-                        )
-
-                        TimelineSegmentAnnotation.objects.create(
-                            annotation=annotation_db,
-                            timeline_segment=timeline_segment_db,
-                        )
-                """
 
             return {
                 "plugin_run": plugin_run.id.hex,
