@@ -110,7 +110,7 @@ class NamedEntityRecognition(Task):
             result_timeline = {}
             timeline = Timeline.objects.create(
                 video=video,
-                name=data.name,
+                name=timeline_name,
                 type=Timeline.TYPE_ANNOTATION,
             )
             result_timeline[f"{timeline_name}_{data.name}"] = timeline.id.hex
@@ -144,7 +144,7 @@ class NamedEntityRecognition(Task):
         with transaction.atomic():
             result_timelines = {}
             with result[1]["annotations"] as data:
-                timeline_name = "Audio Classification"
+                timeline_name = "Named Entities"
                 color_mapping = {
                     "EPER": "#FBFBD3",
                     "LPER": "#D1ACB3",
