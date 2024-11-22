@@ -26,3 +26,4 @@ from .invert_scalar import *
 from .whisper_x import *
 from .audio_speaker import *
 from .audio_classification import *
+from .text_ner import *
