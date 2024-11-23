@@ -134,7 +134,7 @@ class PoSTagging(Task):
                     for annotation_object in annotation.labels:
                         tag_count = annotation_object[annotation_key][idx]
 
-                        max_tag_count = 10
+                        max_tag_count = 100
                         color = max(0, (max_tag_count - tag_count) / max_tag_count)
                         hex_color = rgb_to_hex((color, color, color))
 
