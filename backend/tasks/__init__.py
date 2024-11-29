@@ -28,3 +28,4 @@ from .audio_speaker import *
 from .audio_classification import *
 from .text_ner import *
 from .text_pos import *
+from .text_sentiment import *
