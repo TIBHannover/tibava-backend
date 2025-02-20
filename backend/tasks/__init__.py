@@ -11,6 +11,7 @@ from .places_classification import *
 from .shot_density import *
 from .shot_type_classification import *
 from .shotdetection import *
+from .shot_angle import *
 from .thumbnail import *
 from .color_brightness_analysis import *
 from .clip import *
