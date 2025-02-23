@@ -1,10 +1,11 @@
 import logging
 from typing import Dict
-from collections import Counter
 
 from backend.models import (
     Annotation,
+    AnnotationCategory,
     PluginRun,
+    PluginRunResult,
     Video,
     TibavaUser,
     Timeline,
@@ -15,7 +16,7 @@ from backend.plugin_manager import PluginManager
 
 from ..utils.analyser_client import TaskAnalyserClient
 
-from analyser.data import DataManager
+from analyser.data import DataManager, Shot
 from backend.utils.parser import Parser
 from backend.utils.task import Task
 from django.db import transaction
@@ -30,6 +31,8 @@ class ShotAngleParser(Parser):
     def __init__(self):
         self.valid_parameter = {
             "timeline": {"parser": str, "default": "Shot Angle"},
+            "fps": {"parser": float, "default": 2.0},
+            "shot_timeline_id": {},
         }
 
 
@@ -60,70 +63,125 @@ class ShotAngle(Task):
         )
 
         video_id = self.upload_video(client, video)
-        shot_result = self.run_analyser(
-            client,
-            "transnet_shotdetection",
-            inputs={"video": video_id},
-            outputs=["shots"],
-        )
-        if shot_result is None:
-            raise Exception
-        shot_angle_result = self.run_analyser(
+
+        result = self.run_analyser(
             client,
             "shot_angle",
-            inputs={"video": video_id, "shots": shot_result[0]["shots"]},
-            downloads=["annotations"],
+            parameters={"fps": parameters.get("fps")},
+            inputs={"video": video_id},
+            outputs=["probs"],
+            downloads=["probs"],
         )
-        if shot_angle_result is None:
+        if result is None:
             raise Exception
+
+        shots_id = None
+        if parameters.get("shot_timeline_id"):
+            shot_timeline_db = Timeline.objects.get(
+                id=parameters.get("shot_timeline_id")
+            )
+            shot_timeline_segments = TimelineSegment.objects.filter(
+                timeline=shot_timeline_db
+            )
+
+            shots = manager.create_data("ShotsData")
+            with shots:
+                for x in shot_timeline_segments:
+                    shots.shots.append(Shot(start=x.start, end=x.end))
+            shots_id = client.upload_data(shots)
+
+        result_timelines = {}
+        result_data = {}
+
+        if shots_id:
+            annotations_result = self.run_analyser(
+                client,
+                "shot_annotator",
+                inputs={"probs": result[0]["probs"], "shots": shots_id},
+                downloads=["annotations"],
+            )
+            if annotations_result is None:
+                raise Exception
+
+            """
+            Create a timeline labeled by most probable class (per shot)
+            """
+            logger.info("Create annotation timeline")
+            annotation_timeline = Timeline.objects.create(
+                video=video,
+                name=parameters.get("timeline"),
+                type=Timeline.TYPE_ANNOTATION,
+            )
+
+            result_timelines["annotation"] = annotation_timeline.id.hex
+
+            category_db, _ = AnnotationCategory.objects.get_or_create(
+                name="Shot Angle", video=video, owner=user
+            )
+
+            color_mapping = {
+                "overhead": "#ECF0CC",
+                "high": "#D8E299",
+                "neutral": "#C5D366",
+                "low": "#B1C533",
+                "dutch": "#9EB600",
+            }
+
+            with annotations_result[1]["annotations"] as annotations:
+                for annotation in annotations.annotations:
+                    # create TimelineSegment
+                    timeline_segment_db = TimelineSegment.objects.create(
+                        timeline=annotation_timeline,
+                        start=annotation.start,
+                        end=annotation.end,
+                    )
+
+                    for label in annotation.labels:
+                        # add annotion to TimelineSegment
+                        annotation_db, _ = Annotation.objects.get_or_create(
+                            name=label.title(),
+                            video=video,
+                            category=category_db,
+                            owner=user,
+                            color=color_mapping.get(label, "#EEEEEE"),
+                        )
+
+                        TimelineSegmentAnnotation.objects.create(
+                            annotation=annotation_db,
+                            timeline_segment=timeline_segment_db,
+                        )
+                result_data["annotations"] = annotations.id
 
         if dry_run or plugin_run is None:
             logging.warning("dry_run or plugin_run is None")
             return {}
 
-        color_mapping = {
-            "overhead": "#ECF0CC",
-            "high": "#D8E299",
-            "neutral": "#C5D366",
-            "low": "#B1C533",
-            "dutch": "#9EB600",
-        }
-
         with transaction.atomic():
-            with shot_angle_result[1]["annotations"] as data:
-                result_timeline = {}
-                timeline = Timeline.objects.create(
-                    video=video,
-                    name=parameters.get("timeline"),
-                    type=Timeline.TYPE_ANNOTATION,
-                )
-                result_timeline[parameters.get("timeline")] = timeline.id.hex
-                for annotation in data.annotations:
-                    timeline_segment_db = TimelineSegment.objects.create(
-                        timeline=timeline,
-                        start=annotation.start,
-                        end=annotation.end,
+            with result[1]["probs"] as data:
+                data.extract_all(manager)
+                for index, sub_data in zip(data.index, data.data):
+                    plugin_run_result_db = PluginRunResult.objects.create(
+                        plugin_run=plugin_run,
+                        data_id=sub_data,
+                        name="shot_angle",
+                        type=PluginRunResult.TYPE_SCALAR,
                     )
-                    # Show the most predicted label per shot
-                    label, count = Counter(annotation.labels).most_common(1)[0]
-
-                    annotation_db, _ = Annotation.objects.get_or_create(
-                        name=label,
+                    timeline_db = Timeline.objects.create(
                         video=video,
-                        owner=user,
-                        color=color_mapping.get(label, "#EEEEEE"),
+                        name=index.title(),
+                        type=Timeline.TYPE_PLUGIN_RESULT,
+                        plugin_run_result=plugin_run_result_db,
+                        visualization=Timeline.VISUALIZATION_SCALAR_COLOR,
+                        parent=annotation_timeline,
                     )
 
-                    TimelineSegmentAnnotation.objects.create(
-                        annotation=annotation_db,
-                        timeline_segment=timeline_segment_db,
-                    )
+                    result_timelines[index.title()] = timeline_db.id.hex
+
+                result_data["probs"] = data.id
 
                 return {
                     "plugin_run": plugin_run.id.hex,
-                    "plugin_run_results": [],
-                    "timelines": result_timeline,
-                    "data": {
-                        "annotations": shot_angle_result[1]["annotations"].id,
-                    },
+                    "plugin_run_results": [plugin_run_result_db.id.hex],
+                    "timelines": result_timelines,
+                    "data": result_data,
                 }
