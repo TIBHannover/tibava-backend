@@ -28,6 +28,7 @@ from .cluster_to_scalar import *
 from .invert_scalar import *
 from .whisper_x import *
 from .audio_speaker import *
+from .active_speaker_detection import *
 from .audio_classification import *
 from .text_ner import *
 from .text_pos import *
