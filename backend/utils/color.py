@@ -81,3 +81,18 @@ def get_closest_color(color):
     # )
     return result
 
+def get_color_from_label(label: str) -> str:
+    """Computes a hex color for a label based on its hash.
+    All colors are in the lighter spectrum so that black writing is readable.
+
+    Args:
+        label (str): Label of annotation
+
+    Returns:
+        str: RGB Hex color
+    """
+    code = str(hash(label) % (10**6))
+    r = float(code[0:2]) / 200 + 0.5
+    g = float(code[2:4]) / 200 + 0.5
+    b = float(code[4:6]) / 200 + 0.5
+    return rgb_to_hex([r, g, b])

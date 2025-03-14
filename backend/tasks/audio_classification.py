@@ -8,6 +8,7 @@ from backend.plugin_manager import PluginManager
 
 from backend.utils.parser import Parser
 from backend.utils.task import Task
+from backend.utils.color import get_color_from_label
 
 from analyser.data import DataManager  # type: ignore
 from backend.models import (
@@ -118,7 +119,6 @@ class AudioClassification(Task):
             data,
             timelines_name: str,
             annotation_key: str,
-            color_mapping: Dict[str, str],
         ):
             data.extract_all(manager)
 
@@ -157,7 +157,7 @@ class AudioClassification(Task):
                                 name=label,
                                 video=video,
                                 owner=user,
-                                color=color_mapping.get(label, "#EEEEEE"),
+                                color=get_color_from_label(label)
                             )
 
                             TimelineSegmentAnnotation.objects.create(
@@ -172,7 +172,7 @@ class AudioClassification(Task):
                 logging.info(data)
                 timeline_name = "Audio Classification"
                 result_timelines.update(
-                    create_timelines(data, timeline_name, "label_pred", {})
+                    create_timelines(data, timeline_name, "label_pred")
                 )
 
             return {
