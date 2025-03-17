@@ -8,7 +8,7 @@ from backend.plugin_manager import PluginManager
 
 from backend.utils.parser import Parser
 from backend.utils.task import Task
-from backend.utils import rgb_to_hex
+from backend.utils.color import color_map
 
 
 from analyser.data import DataManager  # type: ignore
@@ -25,33 +25,12 @@ from backend.models import (
 from django.db import transaction
 from django.conf import settings
 
-import numpy as np
-import numpy.typing as npt
-
-
-def color_map(
-    prob: float,
-    active_color: npt.NDArray = np.array([159 / 255, 39 / 255, 31 / 255]),
-    inactive_color: npt.NDArray = np.array([1.0, 1.0, 1.0]),
-) -> str:
-    """Interpolates colors for given probability
-
-    Args:
-        prob (float): Probability
-        active_color (npt.NDArray): RGB color for probability of 1
-        inactive_color (npt.NDArray): RGB color for probability of 0
-
-    Returns:
-        str: Color in hex format
-    """
-    color = prob * active_color + (1 - prob) * inactive_color
-    return rgb_to_hex(color)
-
 
 @PluginManager.export_parser("text_sentiment")
 class TextSentimentParser(Parser):
     def __init__(self):
         self.valid_parameter = {
+            "timeline": {"parser": str, "default": "Speech Sentiment"},
             "model_type": {"parser": str, "default": "Multilingual"},
         }
 
@@ -201,19 +180,17 @@ class TextSentiment(Task):
 
         with transaction.atomic():
             with result[1]["annotations"] as ann_data:
-                timelines_name = "Speech Sentiment"
-
                 sentiments = {"positive": 0, "negative": 1, "neutral": 2}
 
                 color_mapping = {
                     "positive": "#B9D3BD",
                     "negative": "#DFB6B3",
-                    "neutral": "#FFFFFF",
+                    "neutral": "#D0D0D0",
                 }
 
                 result_timelines = create_timelines(
                     ann_data,
-                    timelines_name,
+                    parameters["timeline"],
                     "sentiment_pred",
                     "sentiment_probs",
                     sentiments,

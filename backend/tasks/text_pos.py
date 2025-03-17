@@ -29,6 +29,7 @@ from django.conf import settings
 class PoSTaggingParser(Parser):
     def __init__(self):
         self.valid_parameter = {
+            "timeline": {"parser": str, "default": "PoS Tagging"},
             "language_code": {"parser": str, "default": "de"},
         }
 
@@ -154,8 +155,6 @@ class PoSTagging(Task):
         with transaction.atomic():
             result_timelines = {}
             with result[1]["annotations"] as data:
-                timelines_name = "PoS Tagging"
-
                 # from plugin upos
                 pos_abbreviations = {
                     "ADJ": 0,
@@ -204,7 +203,7 @@ class PoSTagging(Task):
                         pos_dict[pos_names[abbreviation].title()] = idx
 
                 result_timelines.update(
-                    create_timelines(data, timelines_name, "vector", pos_dict)
+                    create_timelines(data, parameters["timeline"], "vector", pos_dict)
                 )
 
             return {

@@ -1,11 +1,10 @@
-from typing import Dict, List
+from typing import Dict
 import logging
 
 from ..utils.analyser_client import TaskAnalyserClient
 
-from backend.models import PluginRun, PluginRunResult, Video, Timeline
+from backend.models import PluginRun, Video, Timeline
 from backend.plugin_manager import PluginManager
-from backend.utils import media_path_to_video
 
 from backend.utils.parser import Parser
 from backend.utils.task import Task
@@ -15,7 +14,6 @@ from backend.models import (
     Annotation,
     AnnotationCategory,
     PluginRun,
-    PluginRunResult,
     TimelineSegmentAnnotation,
     Video,
     TibavaUser,
@@ -30,6 +28,7 @@ from django.conf import settings
 class WhisperXParser(Parser):
     def __init__(self):
         self.valid_parameter = {
+            "timeline": {"parser": str, "default": "WhisperX Transcript"},
             "language_code": {"parser": str, "default": None},
         }
 
@@ -104,7 +103,7 @@ class WhisperX(Task):
 
                 parent_timeline = Timeline.objects.create(
                     video=video,
-                    name="WhisperX Transcript",
+                    name=parameters["timeline"],
                     type=Timeline.TYPE_ANNOTATION,
                 )
 

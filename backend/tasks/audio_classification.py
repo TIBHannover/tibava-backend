@@ -28,6 +28,7 @@ from django.conf import settings
 class AudioClassificationParser(Parser):
     def __init__(self):
         self.valid_parameter = {
+            "timeline": {"parser": str, "default": "Audio Classification"},
             "segment_type": {"parser": str},  # Speaker or Shot
         }
 
@@ -170,9 +171,8 @@ class AudioClassification(Task):
             result_timelines = {}
             with result[1]["annotations"] as data:
                 logging.info(data)
-                timeline_name = "Audio Classification"
                 result_timelines.update(
-                    create_timelines(data, timeline_name, "label_pred")
+                    create_timelines(data, parameters["timeline"], "label_pred")
                 )
 
             return {

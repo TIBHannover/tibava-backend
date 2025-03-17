@@ -27,6 +27,7 @@ from django.conf import settings
 class NamedEntityRecognitionParser(Parser):
     def __init__(self):
         self.valid_parameter = {
+            "timeline": {"parser": str, "default": "Named Entities"},
             # TODO maybe add language parameter if multiple languages are supported
         }
 
@@ -144,7 +145,6 @@ class NamedEntityRecognition(Task):
         with transaction.atomic():
             result_timelines = {}
             with result[1]["annotations"] as data:
-                timeline_name = "Named Entities"
                 color_mapping = {
                     "EPER": "#FBFBD3",
                     "LPER": "#D1ACB3",
@@ -156,7 +156,7 @@ class NamedEntityRecognition(Task):
 
                 result_timelines.update(
                     create_timeline(
-                        data, timeline_name, "wd_label", color_mapping, color_key="type"
+                        data, parameters["timeline"], "wd_label", color_mapping, color_key="type"
                     )
                 )
 
