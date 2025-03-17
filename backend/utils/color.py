@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import numpy.typing as npt
 
 
 def random_rgb():
@@ -80,6 +81,26 @@ def get_closest_color(color):
     #     result,
     # )
     return result
+
+
+def color_map(
+    prob: float,
+    active_color: npt.NDArray = np.array([159 / 255, 39 / 255, 31 / 255]),
+    inactive_color: npt.NDArray = np.array([1.0, 1.0, 1.0]),
+) -> str:
+    """Interpolates colors for given probability
+
+    Args:
+        prob (float): Probability
+        active_color (npt.NDArray): RGB color for probability of 1
+        inactive_color (npt.NDArray): RGB color for probability of 0
+
+    Returns:
+        str: Color in hex format
+    """
+    color = prob * active_color + (1 - prob) * inactive_color
+    return rgb_to_hex(color)
+
 
 def get_color_from_label(label: str) -> str:
     """Computes a hex color for a label based on its hash.
